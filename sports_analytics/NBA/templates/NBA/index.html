@@ -1,10 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>NBA Homepage</title>
-</head>
-<body>
-<p1>TEST PAGE </p1>
-</body>
-</html>
+{# sports_analytics/templates/sports_analytics/base.html #}
+{% extends 'base.html' %}
+
+{% block title %}
+NBA
+{% endblock %}
+
+{% load mathfilters %}
+
+<!-- https://simpleisbetterthancomplex.com/tutorial/2016/08/03/how-to-paginate-with-django.html -->
+
+{% block middlerightcolumn %}
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>First Name</th>
+      <th>Last Name</th>
+      <th>Active?</th>
+      <th>Go To Page</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for player in player_list %}
+      <tr>
+        <td>{{ player.first_name }}</td>
+        <td>{{ player.last_name }}</td>
+        <td>{{ player.is_active }}</td>
+        <td><button onclick="location.href='player/{{ player.id }}'" type="button">
+         Go To Page</button></td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if player_list.has_other_pages %}
+  <ul class="pagination" style="border: 1px solid #ddd;">
+    {% if player_list.has_previous %}
+      <li><a href="?ppage={{ player_list.previous_page_number }}">&laquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&laquo;</span></li>
+    {% endif %}
+    {% for i in player_list.paginator.page_range %}
+      {% with ppage_number=player_list.number radius=8 %}
+      {% if i >= ppage_number|sub:radius %}
+      {% if i <= ppage_number|add:radius %}
+        {% if player_list.number == i %}
+          <li class="active" style="border: 1px solid #ddd;"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+        {% else %}
+          <li style="border: 1px solid #ddd;"><a href="?ppage={{ i }}">{{ i }}</a></li>
+        {% endif %}
+      {% endif %}
+      {% endif %}
+      {% endwith %}
+    {% endfor %}
+    {% if player_list.has_next %}
+      <li><a href="?ppage={{ player_list.next_page_number }}">&raquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&raquo;</span></li>
+    {% endif %}
+  </ul>
+{% endif %}
+{% endblock %}

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'NBA.apps.NbaConfig',
+    'mathfilters',
 ]
 
 MIDDLEWARE = [
@@ -55,7 +56,7 @@ ROOT_URLCONF = 'sports_analytics.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['/Users/ishaqyousefhajhasan/Desktop/Sports Analytics/sports_analytics/templates/sports_analytics/',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
