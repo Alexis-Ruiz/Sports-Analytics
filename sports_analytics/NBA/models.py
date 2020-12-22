@@ -18,7 +18,7 @@ class Team(models.Model):
     nickname = models.CharField(max_length = 50, blank=True)
     logo = models.TextField(validators=[URLValidator()], blank=True)
     shortName = models.CharField(max_length = 10, blank=True)
-    allStar = models.IntegerField()
+    allStar = models.BooleanField()
     nbaFranchise  = models.BooleanField()
 
     # relational fields

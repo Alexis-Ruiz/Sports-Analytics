@@ -121,6 +121,6 @@ def get_missing_players(league, teamIds):
         get_player_for_team(str(teamId))
 
 
-
-
+get_players_from_leagues(["africa", "sacramento", "utah", "vegas"])
+# file_stats()
 

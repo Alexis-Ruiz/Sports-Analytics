@@ -9,13 +9,59 @@ NBA
 
 <!-- https://simpleisbetterthancomplex.com/tutorial/2016/08/03/how-to-paginate-with-django.html -->
 
+{% block middleleftcolumn %}
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Full Name</th>
+      <th>City</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for team in team_list %}
+      <tr>
+        <td>{{ team.nickname }}</td>
+        <td>{{ team.city }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if team_list.has_other_pages %}
+  <ul class="pagination" style="border: 1px solid #ddd;">
+    {% if team_list.has_previous %}
+      <li><a href="?tpage={{ team_list.previous_page_number }}&{{ qd.urlencode }}">&laquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&laquo;</span></li>
+    {% endif %}
+    {% for i in team_list.paginator.page_range %}
+      {% with tpage_number=team_list.number radius=8 %}
+      {% if i >= tpage_number|sub:radius %}
+      {% if i <= tpage_number|add:radius %}
+        {% if team_list.number == i %}
+          <li class="active" style="border: 1px solid #ddd;"><span>{{ i }} <span class="sr-only">(current)</span></span></li>
+        {% else %}
+          <li style="border: 1px solid #ddd;"><a href="?tpage={{ i }}&{{ qd.urlencode }}">{{ i }}</a></li>
+        {% endif %}
+      {% endif %}
+      {% endif %}
+      {% endwith %}
+    {% endfor %}
+    {% if team_list.has_next %}
+      <li><a href="?tpage={{ team_list.next_page_number }}&{{ qd.urlencode }}">&raquo;</a></li>
+    {% else %}
+      <li class="disabled"><span>&raquo;</span></li>
+    {% endif %}
+  </ul>
+{% endif %}
+{% endblock %}
+
 {% block middlerightcolumn %}
 <table class="table table-bordered">
   <thead>
     <tr>
       <th>First Name</th>
       <th>Last Name</th>
-      <th>Go To Page</th>
+      <th>User Page</th>
     </tr>
   </thead>
   <tbody>

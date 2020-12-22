@@ -5,7 +5,6 @@ from django.urls import reverse
 from NBA.models import Player, Team
 from django.core.paginator import Paginator
 
-import NBA.populate_database
 from django.conf import settings
 
 import json
@@ -21,6 +20,7 @@ def index(request):
     player_page = (qd.pop('ppage', [1]))[0]
     player_first_name = (qd.pop('pfname', ['']))[0]
     player_last_name = (qd.pop('plname', ['']))[0]
+    team_page = (qd.pop('tpage', [1]))[0]
 
     # filter based on search parameters if exist and page
     players = Player.objects.all()
@@ -30,11 +30,18 @@ def index(request):
         players = players.filter(lastName__contains=player_last_name)
     player_paginator = Paginator(players, 50)
 
+    teams = Team.objects.all()
+    team_paginator = Paginator(teams, 10)
+
     try:
         player_list = player_paginator.page(player_page)
     except:
         player_list = player_paginator.page(1)
 
+    try:
+        team_list = team_paginator.page(team_page)
+    except:
+        team_list = team_paginator.page(1)
 
     # reinsert search parameters for team and player filters
     qd.update({'pfname': player_first_name})

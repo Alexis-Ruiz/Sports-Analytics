@@ -210,7 +210,18 @@ def add_playerleagues(league):
                             'lastName'] + 'already has his info filled')
 
 
-add_playerleagues('standard')
+leagues = ["africa", "orlando", "sacramento", "standard", "utah", "vegas"]
+
+def init():
+    add_leagues()
+    add_conferences()
+    add_teams()
+    
+    for league in leagues:
+        add_players(league)
+        add_playerleagues(league)
+    
+    
 
 cur.close()
 conn.close()
