@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-{{ player.full_name }}
+{{ player.firstName|add:" "|add:player.lastName }}
 {% endblock %}
 
 {% load mathfilters %}

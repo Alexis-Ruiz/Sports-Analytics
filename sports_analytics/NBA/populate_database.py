@@ -4,9 +4,11 @@ import django
 
 from NBA.models import Player, Team
 
-# nba-api libraries
-from nba_api.stats.static import players
-from nba_api.stats.static import teams
+# # nba-api libraries
+# from nba_api.stats.static import players
+# from nba_api.stats.static import teams
+
+import json
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sporting_analytics.settings")
 django.setup()

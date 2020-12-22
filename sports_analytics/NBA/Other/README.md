@@ -1,0 +1,3 @@
+About sports_analytics/NBA/Other
+
+This folder contains all the helper python scripts that aren't part of the WebApp but I use for testing, setup, etc...
