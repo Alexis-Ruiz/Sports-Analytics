@@ -1,1 +1,0 @@
-{"api": {"status": 200, "message": "GET leagues/", "results": 6, "filters": [], "leagues": ["africa", "orlando", "sacramento", "standard", "utah", "vegas"]}}

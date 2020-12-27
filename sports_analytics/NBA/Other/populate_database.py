@@ -1,227 +1,186 @@
+import test_api
 import psycopg2
 import json
 import datetime
+import csv
+import os
 
-try:
-    conn = psycopg2.connect(dbname='NBA', user='postgres', host='localhost', password='')
-except:
-    print('cannot connect to DB')
-    exit(1)
+from sql_scripts import *
 
-cur = conn.cursor()
+def read_csv_from_file(filename):
+    with open(filename) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
 
-LEAGUESEARCHSQL = """  SELECT id, name
-	                 FROM public."NBA_league"
-	                 WHERE name = %s;
-                  """
+        columns = []
+        rows = []
 
-LEAGUEINSERTSQL = """ INSERT INTO public."NBA_league"(name) VALUES (%s);
-          """
-
-CONFERENCESEARCHSQL = """SELECT id, "confName", "divName", league_id
-	                     FROM public."NBA_conference" CONF
-	                     WHERE "confName" = %s and "divName" = %s and "league_id" = %s;
-                      """
-
-CONFERENCEINSERTSQL = """ INSERT INTO public."NBA_conference"(
-    "confName", "divName", league_id)
-	VALUES (%s, %s, %s);
-"""
-
-TEAMSEARCHSQL = """SELECT id, nickname, city, "allStar", "fullName", logo, "nbaFranchise", "shortName", "teamID", conference_id
-	FROM public."NBA_team"
-	WHERE "teamID" = %s;
-"""
-
-TEAMINSERTSQL = """INSERT INTO public."NBA_team"(
-	nickname, city, "allStar", "fullName", logo, "nbaFranchise", "shortName", "teamID", conference_id)
-	VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
-"""
-
-PLAYERSEARCHSQL = """ SELECT id, affiliation, "collegeName", country, "dateOfBirth", "firstName", "heightInMeters", "lastName", "playerId", "startNba", team_id, "weightInKilograms", "yearsPro"
-	FROM public."NBA_player" 
-	WHERE "playerId" = %s;
-"""
-
-PLAYERINSERTSQL = """INSERT INTO public."NBA_player"(
-	affiliation, "collegeName", country, "dateOfBirth", "firstName", "heightInMeters", "lastName", "playerId", "startNba", team_id, "weightInKilograms", "yearsPro")
-	VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
-	"""
-
-PLAYERLEAGUESEARCHSQL = """SELECT id, jersey, active, pos, league_id, player_id
-	FROM public."NBA_playerleague"
-	WHERE league_id = %s and player_id = %s
-"""
-
-PLAYERLEAGUEINSERTSQL = """INSERT INTO public."NBA_playerleague"(
-	jersey, active, pos, league_id, player_id)
-	VALUES (%s, %s, %s, %s, %s);
-	"""
-
-
-def add_leagues():
-
-    filename = 'league_info.txt'
-    league_info = open(filename, 'r')
-    league_json = json.loads(league_info.read())
-    league_info.close()
-    leagues = (league_json['api'])['leagues']
-
-    for league in leagues:
-        cur.execute(LEAGUESEARCHSQL, (league,))
-        result = cur.fetchall()
-        if len(result) == 0:
-            cur.execute(LEAGUEINSERTSQL, (league,))
-        else:
-            print('League: ' + league + ' already exists')
-
-    conn.commit()
-
-def add_conferences():
-    filename = 'team_info.txt'
-    league_info = open(filename, 'r')
-    league_json = json.loads(league_info.read())
-    league_info.close()
-
-    for league in league_json:
-        cur.execute(LEAGUESEARCHSQL, (league,))
-        leagueobj = cur.fetchall()[0]
-
-        teams = league_json[league]['api']['teams']
-
-        for team in teams:
-            conference = team['leagues'][league]
-
-            cur.execute(CONFERENCESEARCHSQL, (conference['confName'], conference['divName'], leagueobj[0],))
-            res = cur.fetchall()
-
-            if len(res) == 0:
-                cur.execute(CONFERENCEINSERTSQL, (conference['confName'], conference['divName'], leagueobj[0],))
-                conn.commit()
+        for row in csv_reader:
+            if line_count == 0:
+                columns = row
             else:
-                print('Conference: ' + conference['confName'] + ', Division: ' + conference['divName'] + ', League: ' + str(leagueobj[0]) + ' already exists')
+                row_dict = {}
+                for idx in range(len(columns)):
+                    row_dict[columns[idx]] = row[idx]
+                rows.append(row_dict)
+            line_count += 1
+
+        return rows
+
+def read_json_from_file(filename):
+    file = open(filename, 'r')
+    obj = json.loads(file.read())
+    file.close()
+    return obj
+
+# establish connection with NBA Database
+def connect_to_database():
+    try:
+        conn = psycopg2.connect(dbname='NBA', user='postgres', host='localhost', password='')
+    except:
+        print('cannot connect to DB')
+        exit(1)
+
+    return conn
+
+# database connection with cursor
+CONN = connect_to_database()
+CUR = CONN.cursor()
 
 
-def add_teams():
-    filename = 'team_info.txt'
-    league_info = open(filename, 'r')
-    league_json = json.loads(league_info.read())
-    league_info.close()
-
-    for league in league_json:
-        cur.execute(LEAGUESEARCHSQL, (league,))
-        leagueobj = cur.fetchall()[0]
-
-        teams = league_json[league]['api']['teams']
-
-        for team in teams:
-            conference = team['leagues'][league]
-
-            cur.execute(CONFERENCESEARCHSQL, (conference['confName'], conference['divName'], leagueobj[0],))
-            conferenceobj = cur.fetchall()[0]
-
-            cur.execute(TEAMSEARCHSQL, (team['teamId'], ))
-            res = cur.fetchall()
-
-            if len(res) == 0:
-                if team['allStar'] == '':
-                    team['allStar'] = 0
-                cur.execute(TEAMINSERTSQL, (team['nickname'], team['city'], team['allStar'],
-                                            team['fullName'], team['logo'], team['nbaFranchise'],
-                                            team['shortName'], team['teamId'], conferenceobj[0],))
-                conn.commit()
-            else:
-                print('Team: ' + team['fullName'] + 'with teamId: ' + team['teamId'] + 'already exists')
+# helper functions to add specific objects ---------------------
+def add_update_specific_team(team):
+    # temporary fixes
+    team['conference'] = team['confernce']
 
 
-def add_players(league):
-    filename = league + '_player_info.txt'
-    team_info = open(filename, 'r')
-    team_json = json.loads(team_info.read())
-    team_info.close()
-    
-    for teamId in team_json:
-        players = team_json[teamId]['api']['players']
+    CUR.execute(TEAM_SQLS['search'] + 'WHERE nba_api_id = %s;', (team['nba_api_id'],))
+    db_team = CUR.fetchall()
 
-        cur.execute(TEAMSEARCHSQL, (teamId,))
-        teamobj = cur.fetchone()[0]
+    if len(db_team) == 0:
+        # This is a new team and must be inserted into the database
+        CUR.execute(TEAM_SQLS['insert'], tuple(team[column] for column in TEAM_SQLS['columns']))
+    else:
+        # this team already exists and so update its values
+        CUR.execute(TEAM_SQLS['update'] + 'id = ' + str(db_team[0][0]) + ';' , tuple(team[column] for column in TEAM_SQLS['columns']))
 
-        for player in players:
-            cur.execute(PLAYERSEARCHSQL, (player['playerId'], ))
-            res = cur.fetchall()
+def add_update_specific_player(player):
+    CUR.execute(PLAYER_SQLS['search'] + 'WHERE nba_api_id = %s;', (player['nba_api_id'], ))
+    db_player = CUR.fetchall()
 
-            if len(res) == 0:
-                if  player['dateOfBirth'] == '':
-                    player['dateOfBirth'] = None
-                if  player['heightInMeters'] == '':
-                    player['heightInMeters'] = None
-                if  player['weightInKilograms'] == '':
-                    player['weightInKilograms'] = None
-                cur.execute(PLAYERINSERTSQL, (player['affiliation'], player['collegeName'], player['country'],
-                                              player['dateOfBirth'], player['firstName'], player['heightInMeters'],
-                                              player['lastName'], player['playerId'], player['startNba'], teamobj[0],
-                                              player['weightInKilograms'], player['yearsPro']))
-                conn.commit()
-            else:
-                print('Player: ' + player['firstName'] + ' ' + player['lastName'] + ' already exists')
+    if len(db_player) == 0:
+        # This is a new player and must be inserted into the database
+        CUR.execute(PLAYER_SQLS['insert'], tuple(player[column] for column in PLAYER_SQLS['columns']))
+    else:
+        # this player already exists and so update its values
+        CUR.execute(PLAYER_SQLS['update'] + 'id = ' + str(db_player[0][0]) + ';' , tuple(player[column] for column in PLAYER_SQLS['columns']))
+
+def add_update_specific_playsfor(player):
+    # mapping to database column
+    player['team_nba_api_id'] = player['nba_api_team_id']
+    player['player_nba_api_id'] = player['nba_api_id']
+
+    if (player['team_nba_api_id'] == None or player['team_nba_api_id'] == '' or player['team_nba_api_id'] == 0):
+        return
+
+    CUR.execute(PLAYSFOR_SQLS['search'] + 'WHERE player_nba_api_id = %s;', (player['nba_api_id'],))
+    db_player = CUR.fetchall()
+
+    if len(db_player) == 0:
+        # This is a new player and must be inserted into the database
+        CUR.execute(PLAYSFOR_SQLS['insert'], tuple(player[column] for column in PLAYSFOR_SQLS['columns']))
+    else:
+        # this player already exists and so update its values
+        CUR.execute(PLAYSFOR_SQLS['update'] + 'id = ' + str(db_player[0][0]) + ';',
+                    tuple(player[column] for column in PLAYSFOR_SQLS['columns']))
+
+def add_update_specific_teamgame(teamgame):
+    # mapping to database column
+    for attr in teamgame:
+        if teamgame[attr] == '':
+            teamgame[attr] = None
+
+    teamgame['nba_api_game_id'] = teamgame['Game_ID']
+    teamgame['nba_api_team_id'] = teamgame['Team_ID']
+    teamgame['game_date'] = teamgame['GAME_DATE']
+    teamgame['is_win'] = True if teamgame['WL'] == 'W' else False
+    teamgame['minutes'] = teamgame['MIN']
+    try:
+        teamgame['FG_PCT'] = round(((1.0 * int(teamgame['FGM']))/int(teamgame['FGA'])), 3)
+    except:
+        teamgame['FG_PCT'] = None
+
+    try:
+        teamgame['FG3_PCT'] = round(((1.0 * int(teamgame['FG3M'])) / int(teamgame['FG3A'])), 3)
+    except:
+        teamgame['FG3_PCT'] = None
+
+    try:
+        teamgame['FT_PCT'] = round(((1.0 * int(teamgame['FTM'])) / int(teamgame['FTA'])), 3)
+    except:
+        teamgame['FT_PCT'] = None
+
+    CUR.execute(TEAMGAMES_SQLS['search'] + 'WHERE nba_api_game_id = %s AND nba_api_team_id = %s;',
+                (teamgame['Game_ID'], teamgame['Team_ID']))
+    db_player = CUR.fetchall()
+
+    if len(db_player) == 0:
+        # This is a new teamgame and must be inserted into the database
+        CUR.execute(TEAMGAMES_SQLS['insert'], tuple(teamgame[column] for column in TEAMGAMES_SQLS['columns']))
+    else:
+        # this teamgame already exists and so update its values
+        CUR.execute(TEAMGAMES_SQLS['update'] + 'id = ' + str(db_player[0][0]) + ';',
+                    tuple(teamgame[column] for column in TEAMGAMES_SQLS['columns']))
 
 
-def add_playerleagues(league):
-    filename = league + '_player_info.txt'
-    team_info = open(filename, 'r')
-    team_json = json.loads(team_info.read())
-    team_info.close()
+# functions to populate all the data ---------------------------
+def add_update_all_playsfor():
+    for player_filename in os.listdir('Players/'):
+        if player_filename.endswith('.json'):
+            player = read_json_from_file('Players/' + player_filename)
+            print('Players/' + player_filename)
+            print('\n')
+            add_update_specific_playsfor(player)
+    CONN.commit()
+    return 1
 
-    cur.execute(LEAGUESEARCHSQL, (league,))
+def add_update_all_teams():
+    filename = 'teams_list.json'
+    teams_info = open(filename, 'r')
+    teams_list = json.loads(teams_info.read())
+    teams_info.close()
+    for team in teams_list:
+        add_update_specific_team(team)
+    CONN.commit()
+    return 1
 
-    for teamId in team_json:
-        players = team_json[teamId]['api']['players']
+def add_update_all_players():
+    for player_filename in os.listdir('Players/'):
+        if player_filename.endswith('.json'):
+            player = read_json_from_file('Players/' + player_filename)
+            print('Players/' + player_filename)
+            print('\n')
+            add_update_specific_player(player)
+    CONN.commit()
+    return 1
 
-        cur.execute(TEAMSEARCHSQL, (teamId,))
-        # teamobj = cur.fetchone()[0]
-
-        for player in players:
-            cur.execute(PLAYERSEARCHSQL, (player['playerId'], ))
-            res = cur.fetchall()
-
-            if (len(res) > 0):
-                playerobj = res[0]
-
-                playerleagues = player['leagues']
-
-                for league2 in playerleagues:
-                    playerleague = playerleagues[league2]
-                    cur.execute(LEAGUESEARCHSQL, (league2,))
-                    leagueobj = cur.fetchall()[0]
-
-                    cur.execute(PLAYERLEAGUESEARCHSQL, (leagueobj[0], playerobj[0]))
-                    res = cur.fetchall()
-
-                    if len(res) == 0:
-                        if playerleague['active'] == '':
-                            playerleague['active'] = False
-
-                        cur.execute(PLAYERLEAGUEINSERTSQL,
-                                    (playerleague['jersey'], playerleague['active'], playerleague['pos'],
-                                     leagueobj[0], playerobj[0]))
-                        conn.commit()
-                    else:
-                        print('League: ' + league + " with player " + player['firstName'] + ' ' + player[
-                            'lastName'] + 'already has his info filled')
+def add_update_all_team_games():
+    for teamgame_filename in os.listdir('TeamGames/'):
+        if teamgame_filename.endswith('.csv'):
+            teamgames = read_csv_from_file('TeamGames/' + teamgame_filename)
+            print('Processing ' + teamgame_filename)
+            for teamgame in teamgames:
+                print('\tProcessing Game: ' + teamgame['Game_ID'])
+                add_update_specific_teamgame(teamgame)
+    CONN.commit()
+    return 1
 
 
-leagues = ["africa", "orlando", "sacramento", "standard", "utah", "vegas"]
+def update_all_data():
+    add_update_all_teams()
+    add_update_all_players()
+    add_update_all_playsfor()
+    return 1
 
-def init():
-    add_leagues()
-    add_conferences()
-    add_teams()
-    
-    for league in leagues:
-        add_players(league)
-        add_playerleagues(league)
-    
-    
 
-cur.close()
-conn.close()
+

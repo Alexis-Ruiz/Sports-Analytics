@@ -1,0 +1,1 @@
+This is where all the json files representing the players will be stored

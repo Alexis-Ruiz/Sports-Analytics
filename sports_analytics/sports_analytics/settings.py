@@ -16,12 +16,12 @@ import environ
 env = environ.Env()
 environ.Env.read_env()
 
-APIKEY = env("APIKEY")
-APIHOST = env("APIHOST")
-APIHEADERS = {
-    "x-rapidapi-key": APIKEY,
-    "x-rapidapi-host": APIHOST
-}
+# APIKEY = env("APIKEY")
+# APIHOST = env("APIHOST")
+# APIHEADERS = {
+#     "x-rapidapi-key": APIKEY,
+#     "x-rapidapi-host": APIHOST
+# }
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

@@ -67,8 +67,8 @@ NBA
   <tbody>
     {% for player in player_list %}
       <tr>
-        <td>{{ player.firstName }}</td>
-        <td>{{ player.lastName }}</td>
+        <td>{{ player.first_name }}</td>
+        <td>{{ player.last_name }}</td>
         <td><button onclick="location.href='player/{{ player.id }}'" type="button">
          Go To Page</button></td>
       </tr>

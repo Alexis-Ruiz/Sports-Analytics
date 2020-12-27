@@ -9,7 +9,6 @@ from django.conf import settings
 
 import json
 
-HEADERS = settings.APIHEADERS
 
 # Create your views here.
 
@@ -25,9 +24,9 @@ def index(request):
     # filter based on search parameters if exist and page
     players = Player.objects.all()
     if (player_first_name != None and player_first_name != ''):
-        players = players.filter(firstName__contains=player_first_name)
+        players = players.filter(first_name__contains=player_first_name)
     if (player_last_name != None and player_last_name != ''):
-        players = players.filter(lastName__contains=player_last_name)
+        players = players.filter(last_name__contains=player_last_name)
     player_paginator = Paginator(players, 50)
 
     teams = Team.objects.all()
