@@ -9,6 +9,7 @@ Djblets==2.0
 dnspython==2.0.0
 feedparser==6.0.2
 idna==2.10
+nba-api==1.1.9
 numpy==1.19.4
 pandas==1.1.5
 Pillow==8.0.1
