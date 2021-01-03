@@ -106,7 +106,7 @@ class PlayerGame(models.Model):
     PF = models.IntegerField(null=True)
     PTS = models.IntegerField(null=True)
     PLUS_MINUS = models.IntegerField(null=True)
-    VIDEO_AVAILABLE = models.BooleanField(null=True)
+    VIDEO_AVAILABLE = models.IntegerField(null=True)
 
 
 

@@ -2,13 +2,14 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 
-from NBA.models import Player, Team
+from NBA.models import Player, Team, PlayerGame, TeamGame, PlaysFor
 from django.core.paginator import Paginator
 
 from django.conf import settings
 
 import json
 
+CURRENT_SEASON = 2020
 
 # Create your views here.
 
@@ -49,9 +50,26 @@ def index(request):
     return render(request, 'NBA/index.html', {'player_list': player_list, 'team_list': team_list, 'qd': qd})
 
 def player_page(request, player_id):
+
+    context = {}
+
     try:
         player = Player.objects.get(pk = player_id)
     except:
         return HttpResponseRedirect(reverse('nba_index'))
 
-    return render(request, 'NBA/player_page.html', {'player': player})
+    try:
+        playsfor = PlaysFor.objects.get(player_nba_api_id=player.nba_api_id)
+        team = Team.objects.get(nba_api_id=playsfor.team_nba_api_id)
+        context['team'] = team
+    except:
+        pass
+
+    playergames = PlayerGame.objects.filter(nba_api_player_id=player.nba_api_id).order_by('-game_date')
+    if len(playergames) > 5:
+        playergames = playergames[:5]
+
+    context['player'] = player
+    context['recent_games'] = playergames
+
+    return render(request, 'NBA/player_page.html', context)

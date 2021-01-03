@@ -57,3 +57,18 @@ TEAMGAMES_SQLS = {
 	SET nba_api_game_id=%s, nba_api_team_id=%s, game_date=%s, is_win=%s, "MIN"=%s, "FGM"=%s, "FGA"=%s, "FT_PCT"=%s, "FG3M"=%s, "FG3A"=%s, "FG3_PCT"=%s, "FTM"=%s, "FTA"=%s, "FG_PCT"=%s, "OREB"=%s, "DREB"=%s, "REB"=%s, "AST"=%s, "STL"=%s, "BLK"=%s, "TOV"=%s, "PF"=%s, "PTS"=%s
 	WHERE ''',
 }
+
+PLAYERGAMES_SQLS = {
+    'columns': ['nba_api_season_id', 'nba_api_player_id', 'nba_api_game_id', 'game_date', 'matchup', 'is_win', "AST", "BLK", "DREB", "FG3A", "FG3M", "FG3_PCT", "FGA", "FGM", "FG_PCT", "FTA", "FTM", "FT_PCT", "MIN", "OREB", "PF", "PLUS_MINUS", "PTS", "REB", "STL", "TOV", "VIDEO_AVAILABLE"],
+
+    'search': '''SELECT id, nba_api_season_id, nba_api_player_id, nba_api_game_id, game_date, matchup, is_win, "AST", "BLK", "DREB", "FG3A", "FG3M", "FG3_PCT", "FGA", "FGM", "FG_PCT", "FTA", "FTM", "FT_PCT", "MIN", "OREB", "PF", "PLUS_MINUS", "PTS", "REB", "STL", "TOV", "VIDEO_AVAILABLE"
+	FROM public."NBA_playergame" ''',
+
+    'insert': '''INSERT INTO public."NBA_playergame"(
+	nba_api_season_id, nba_api_player_id, nba_api_game_id, game_date, matchup, is_win, "AST", "BLK", "DREB", "FG3A", "FG3M", "FG3_PCT", "FGA", "FGM", "FG_PCT", "FTA", "FTM", "FT_PCT", "MIN", "OREB", "PF", "PLUS_MINUS", "PTS", "REB", "STL", "TOV", "VIDEO_AVAILABLE")
+	VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);''',
+
+    'update': '''UPDATE public."NBA_playergame"
+	SET nba_api_season_id=%s, nba_api_player_id=%s, nba_api_game_id=%s, game_date=%s, matchup=%s, is_win=%s, "AST"=%s, "BLK"=%s, "DREB"=%s, "FG3A"=%s, "FG3M"=%s, "FG3_PCT"=%s, "FGA"=%s, "FGM"=%s, "FG_PCT"=%s, "FTA"=%s, "FTM"=%s, "FT_PCT"=%s, "MIN"=%s, "OREB"=%s, "PF"=%s, "PLUS_MINUS"=%s, "PTS"=%s, "REB"=%s, "STL"=%s, "TOV"=%s, "VIDEO_AVAILABLE"=%s
+	WHERE ''',
+}

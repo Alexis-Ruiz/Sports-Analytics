@@ -4,6 +4,7 @@ import json
 import datetime
 import csv
 import os
+from tqdm import tqdm
 
 from sql_scripts import *
 
@@ -25,6 +26,7 @@ def read_csv_from_file(filename):
                 rows.append(row_dict)
             line_count += 1
 
+        csv_file.close()
         return rows
 
 def read_json_from_file(filename):
@@ -47,6 +49,29 @@ def connect_to_database():
 CONN = connect_to_database()
 CUR = CONN.cursor()
 
+# specific functions for my specific cases
+def add_update_all_player_games_season(season):
+    counter = 0
+
+    PlayerGames = os.listdir('PlayerGames/')
+    PlayerGames = filter(lambda filename: filename.startswith(str(season)), PlayerGames)
+    PlayerGames = list(PlayerGames)
+
+
+    for playergame_filename in tqdm(PlayerGames):
+        if playergame_filename.endswith('.csv'):
+            playergames = read_csv_from_file('PlayerGames/' + playergame_filename)
+            for playergame in playergames:
+                add_update_specific_playergame(playergame)
+
+        counter += 1
+
+        if counter > 250:
+            counter = 0
+            CONN.commit()
+
+    CONN.commit()
+    return 1
 
 # helper functions to add specific objects ---------------------
 def add_update_specific_team(team):
@@ -132,14 +157,52 @@ def add_update_specific_teamgame(teamgame):
         CUR.execute(TEAMGAMES_SQLS['update'] + 'id = ' + str(db_player[0][0]) + ';',
                     tuple(teamgame[column] for column in TEAMGAMES_SQLS['columns']))
 
+def add_update_specific_playergame(playergame):
+    # mapping to database column
+    for attr in playergame:
+        if playergame[attr] == '':
+            playergame[attr] = None
+
+    playergame['nba_api_season_id'] = playergame['SEASON_ID']
+    playergame['nba_api_game_id'] = playergame['Game_ID']
+    playergame['nba_api_player_id'] = playergame['Player_ID']
+    playergame['game_date'] = playergame['GAME_DATE']
+    playergame['is_win'] = True if playergame['WL'] == 'W' else False
+    playergame['matchup'] = playergame['MATCHUP']
+
+    try:
+        playergame['FG_PCT'] = round(((1.0 * int(playergame['FGM']))/int(playergame['FGA'])), 3)
+    except:
+        playergame['FG_PCT'] = None
+
+    try:
+        playergame['FG3_PCT'] = round(((1.0 * int(playergame['FG3M'])) / int(playergame['FG3A'])), 3)
+    except:
+        playergame['FG3_PCT'] = None
+
+    try:
+        playergame['FT_PCT'] = round(((1.0 * int(playergame['FTM'])) / int(playergame['FTA'])), 3)
+    except:
+        playergame['FT_PCT'] = None
+
+    CUR.execute(PLAYERGAMES_SQLS['search'] + 'WHERE nba_api_game_id = %s AND nba_api_player_id = %s;',
+                (playergame['Game_ID'], playergame['Player_ID']))
+    db_player = CUR.fetchall()
+
+    if len(db_player) == 0:
+        # This is a new playergame and must be inserted into the database
+        CUR.execute(PLAYERGAMES_SQLS['insert'], tuple(playergame[column] for column in PLAYERGAMES_SQLS['columns']))
+    else:
+        # this playergame already exists and so update its values
+        CUR.execute(PLAYERGAMES_SQLS['update'] + 'id = ' + str(db_player[0][0]) + ';',
+                    tuple(playergame[column] for column in PLAYERGAMES_SQLS['columns']))
+
 
 # functions to populate all the data ---------------------------
 def add_update_all_playsfor():
-    for player_filename in os.listdir('Players/'):
+    for player_filename in tqdm(os.listdir('Players/')):
         if player_filename.endswith('.json'):
             player = read_json_from_file('Players/' + player_filename)
-            print('Players/' + player_filename)
-            print('\n')
             add_update_specific_playsfor(player)
     CONN.commit()
     return 1
@@ -149,7 +212,7 @@ def add_update_all_teams():
     teams_info = open(filename, 'r')
     teams_list = json.loads(teams_info.read())
     teams_info.close()
-    for team in teams_list:
+    for team in tqdm(teams_list):
         add_update_specific_team(team)
     CONN.commit()
     return 1
@@ -158,28 +221,54 @@ def add_update_all_players():
     for player_filename in os.listdir('Players/'):
         if player_filename.endswith('.json'):
             player = read_json_from_file('Players/' + player_filename)
-            print('Players/' + player_filename)
-            print('\n')
             add_update_specific_player(player)
     CONN.commit()
     return 1
 
 def add_update_all_team_games():
-    for teamgame_filename in os.listdir('TeamGames/'):
+    for teamgame_filename in tqdm(os.listdir('TeamGames/')):
         if teamgame_filename.endswith('.csv'):
             teamgames = read_csv_from_file('TeamGames/' + teamgame_filename)
-            print('Processing ' + teamgame_filename)
             for teamgame in teamgames:
-                print('\tProcessing Game: ' + teamgame['Game_ID'])
                 add_update_specific_teamgame(teamgame)
+
     CONN.commit()
     return 1
 
+def add_update_all_player_games():
+    counter = 0
+
+    for playergame_filename in tqdm(os.listdir('PlayerGames/')):
+        if playergame_filename.endswith('.csv'):
+            playergames = read_csv_from_file('PlayerGames/' + playergame_filename)
+            for playergame in playergames:
+                add_update_specific_playergame(playergame)
+
+        counter += 1
+
+        if counter > 250:
+            counter = 0
+            CONN.commit()
+
+    CONN.commit()
+    return 1
 
 def update_all_data():
+    print('Adding Teams to Database ...')
     add_update_all_teams()
+    print('\n')
+    print('Adding Players to Database ...')
     add_update_all_players()
+    print('\n')
+    print('Adding relation between player and team to Database ...')
     add_update_all_playsfor()
+    print('\n')
+    print('Adding Team Games to Database ...')
+    add_update_all_team_games()
+    print('\n')
+    print('Adding Player Games to Database ...')
+    add_update_all_player_games()
+    print('Done populating the Database. This was a long but worthwhile time')
     return 1
 
 

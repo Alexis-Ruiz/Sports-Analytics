@@ -1,8 +1,89 @@
 {# sports_analytics/templates/sports_analytics/base.html #}
 {% extends 'base.html' %}
 
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+<script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+
 {% block title %}
 {{ player.full_name }}
 {% endblock %}
 
 {% load mathfilters %}
+
+{% block middleleftcolumn %}
+<div class="container">
+    <div class="card">
+        <div class="card-block">
+            <div class="card-text">
+                <span style="font-weight:bold">Active: </span> {% if player.is_active %} Yes {% else %} No {% endif %}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Jersey: </span> #{{ player.jersey_number }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Position: </span> {{ player.position }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Birth Date: </span> {{ player.birth_date|date:"d-M-Y" }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">School: </span> {{ player.school }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Height: </span> {{ player.height }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Weight: </span> {{ player.weight }}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if team %}
+<div class="container">
+    <div class="card">
+        <div class="card-block">
+            <h5 class="text-bold">{{ team.full_name }}</h5>
+            <div class="card-text">
+                <span style="font-weight:bold">Abbreviation: </span> {{ team.abbreviation }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Nickname: </span> {{ team.nickname }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">City: </span> {{ team.city }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">State: </span> {{ team.state }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Conference: </span> {{ team.conference }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Division: </span> {{ team.division }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block middlerightcolumn %}
+{% for game in recent_games %}
+<div class="container">
+    <div class="card">
+        <div class="card-block">
+            <h5 class="text-bold">{{ game.game_date|date:"d-M-Y" }}</h5>
+            <div class="card-text">
+                <span style="font-weight:bold">Matchup: </span> {{ game.matchup }}
+            </div>
+            <div class="card-text">
+                <span style="font-weight:bold">Game Result: </span> {% if game.is_win %} W {% else %} L {%endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

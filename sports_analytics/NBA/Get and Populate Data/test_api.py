@@ -7,7 +7,7 @@
 #
 #
 
-DEBUG = True
+DEBUG = False
 
 def log_console(s):
     if DEBUG:
@@ -23,6 +23,7 @@ import json
 import time
 import csv
 import os
+from tqdm import tqdm
 
 season_types = ['Regular Season', 'Playoffs']
 
@@ -58,7 +59,7 @@ def get_all_teams(start=0, end=None):
     counter = start
 
     # for every team from nba-api
-    for idx in range(start, end):
+    for idx in tqdm(range(start, end)):
         nba_api_team = nba_api_teams[idx]
         log_console('Processing\t' + nba_api_team['full_name'] + '\t' + str(idx) + '/' + str(len(nba_api_teams)))
 
@@ -112,7 +113,7 @@ def get_all_players(start=0, end=None):
     # unnecessary just used for the log_console message
     counter = start
 
-    for idx in range(start, end):
+    for idx in tqdm(range(start, end)):
         nba_api_player = nba_api_players[idx]
 
         log_console('Processing\t' + nba_api_player['full_name'] + '\t' + str(idx) + '/' + str(len(nba_api_players)))
@@ -234,9 +235,9 @@ def get_season_games_for_player(player_id, season):
 
 # in each CSV file store all the games for a team in a season
 # will cover season from 1975 onwards by default
-def store_team_games_in_csv(season_start=1975, season_end=2021):
+def store_team_games_in_csv(season_start=1975, season_end=2020):
     nba_api_teams = read_json_from_file('teams_list.json')
-    for season in range(season_start, season_end):
+    for season in tqdm(range(season_start, season_end)):
         for team in nba_api_teams:
             get_season = player['min_year'] != None
             get_season = get_season and player['max_year'] != None
@@ -250,14 +251,15 @@ def store_team_games_in_csv(season_start=1975, season_end=2021):
 
 # in each CSV file store all the games for a player in a season
 # will cover season from 1975 onwards by default
-def store_player_games_in_csv(season_start=1975, season_end=2021):
+def store_player_games_in_csv(season_start=1975, season_end=2020):
     nba_api_players = []
     for player_filename in os.listdir('Players/'):
         if player_filename.endswith('.json'):
             nba_api_players.append(read_json_from_file('Players/' + player_filename))
 
-    for season in range(season_end, season_start-1, -1):
-        for player in nba_api_players:
+    for season in tqdm(range(season_end, season_start-1, -1)):
+        print('Processing Player Games for season:\t' + str(season))
+        for player in tqdm(nba_api_players):
             get_season = player['date_from'] != None
             get_season = get_season and player['date_to'] != None
             get_season = get_season and player['date_from'] != ''
@@ -267,7 +269,6 @@ def store_player_games_in_csv(season_start=1975, season_end=2021):
             if (get_season):
                 log_console('Processing Player:\t' + player['full_name'])
                 get_season_games_for_player(player['id'], season)
-
 
 # store all te teams as json in teams_list.json
 def store_teams_in_json():
@@ -279,6 +280,16 @@ def store_players_in_json():
     players = get_all_players()
     clean_and_write_file('players_list.json', json.dumps(players, indent=4))
 
-
-
+def get_all_necessary_data():
+    print('Getting Teams Information ...')
+    store_teams_in_json()
+    print('\n')
+    print('Getting Players Information')
+    store_players_in_json()
+    print('\n')
+    print('Getting Team Games')
+    store_team_games_in_csv()
+    print('\n')
+    print('Getting Player Games')
+    store_player_games_in_csv()
 
